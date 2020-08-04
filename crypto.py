@@ -9,10 +9,37 @@ class Crypto:
 	bittrex = None
 	balance = 0
 	bot = None
+	cache = []
 
 	def __init__(self):
 		self.init_ccxt()
 		self.bot = telegram.Bot(token=secrets.TELEGRAM)
+
+	"""
+		Reset cache.
+	"""
+	def flush_cache(self):
+		self.cache = []
+
+	"""
+		Get cached price.
+	"""
+	def get_price_cache(self, exchange, asset1, asset2):
+		for item in self.cache:
+			if (item['exchange'] == str(exchange) and item['asset1'] == asset1 and item['asset2'] == asset2):
+				return item['ticker']
+		return None
+
+	"""
+		Put price in cache.
+	"""
+	def cache_price(self, exchange, asset1, asset2, ticker):
+		self.cache.append({
+			'exchange': str(exchange),
+			'asset1': asset1,
+			'asset2': asset2,
+			'ticker': ticker
+		})
 
 	def init_ccxt(self):
 		self.binance = ccxt.binance({
@@ -50,7 +77,12 @@ class Crypto:
 		Get an asset price, mode can be average, bid or ask.
 	"""
 	def get_price(self, exchange, asset1, asset2, mode='average'):
-		ticker = exchange.fetchTicker('{}/{}'.format(asset1, asset2))
+		ticker = None
+		if (self.get_price_cache(exchange, asset1, asset2)):
+			ticker = self.get_price_cache(exchange, asset1, asset2)
+		else:
+			ticker = exchange.fetchTicker('{}/{}'.format(asset1, asset2))
+			self.cache_price(exchange, asset1, asset2, ticker)
 		if (mode == 'bid'):
 			return ticker['bid']
 		if (mode == 'ask'):
@@ -168,7 +200,7 @@ class Crypto:
 
 	"""
 		Executes backward arbitrage on given asset:
-		ETH -> BTC -> ALT -> ETH.
+		ETH -> BTC -> ALT -> ETH
 	"""
 	def run_arbitrage_backward(self, exchange, asset):
 		print("Arbitrage on {}: ETH -> BTC -> {} -> ETH".format(exchange, asset))

@@ -35,6 +35,7 @@ def run(crypto, exchange, thread_number):
 				threads[-1].start()
 			for thread in threads:
 				thread.join()
+			crypto.flush_cache()
 
 """
 	Main
@@ -57,5 +58,5 @@ if (__name__ == "__main__"):
 	if (exchange_str == "bittrex"):
 		exchange = crypto.bittrex
 	crypto.log("Starting to listen the {} markets".format(exchange_str))
-	thread_number = 2
+	thread_number = 4
 	run(crypto, exchange, thread_number)
