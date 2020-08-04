@@ -1,0 +1,6 @@
+secrets.py
+__pycache__
+*.pyc
+Notes.md
+Results.md
+logs.txt
