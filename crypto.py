@@ -45,19 +45,25 @@ class Crypto:
 		Estimate the profit from backward arbitrage on given asset.
 	"""
 	def estimate_arbitrage_forward(self, asset):
-		step1 = (1 / self.get_price(asset, 'ETH', mode='ask')) * 0.999
-		step2 = (step1 * self.get_price(asset, 'BTC', mode='bid')) * 0.999
-		step3 = (step2 / self.get_price('ETH', 'BTC', mode='ask')) * 0.999
-		return (step3 - 1) * 100
+		try:
+			step1 = (1 / self.get_price(asset, 'ETH', mode='ask')) * 0.999
+			step2 = (step1 * self.get_price(asset, 'BTC', mode='bid')) * 0.999
+			step3 = (step2 / self.get_price('ETH', 'BTC', mode='ask')) * 0.999
+			return (step3 - 1) * 100
+		except ZeroDivisionError:
+			return -1
 
 	"""
 		Estimate the profit from backward arbitrage on given asset.
 	"""
 	def estimate_arbitrage_backward(self, asset):
-		step1 = (self.get_price('ETH', 'BTC', mode='bid')) * 0.999
-		step2 = (step1 / self.get_price(asset, 'BTC', mode='ask')) * 0.999
-		step3 = (step2 * self.get_price(asset, 'ETH', mode='bid')) * 0.999
-		return (step3 - 1) * 100
+		try:
+			step1 = (self.get_price('ETH', 'BTC', mode='bid')) * 0.999
+			step2 = (step1 / self.get_price(asset, 'BTC', mode='ask')) * 0.999
+			step3 = (step2 * self.get_price(asset, 'ETH', mode='bid')) * 0.999
+			return (step3 - 1) * 100
+		except ZeroDivisionError:
+			return -1
 
 	"""
 		Create a market buy order. You can specify either to buy a fixed amount
