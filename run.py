@@ -10,11 +10,11 @@ def process_asset(crypto, exchange, alt):
 	delta_forward = crypto.estimate_arbitrage_forward(exchange, alt)
 	delta_backward = crypto.estimate_arbitrage_backward(exchange, alt)
 	print("{:10} / {:5}: {:8.4f}% / {:8.4f}%".format(str(exchange), alt, delta_forward, delta_backward))
-	if (delta_forward > 0):
-		crypto.log("Found opportunity for {:5} @{:.4f}".format(alt, delta_forward))
+	if (delta_forward > 0.5):
+		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_forward, str(exchange)))
 		crypto.run_arbitrage_forward(exchange, alt)
-	elif (delta_backward > 0):
-		crypto.log("Found opportunity for {:5} @{:.4f}".format(alt, delta_backward))
+	elif (delta_backward > 0.5):
+		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_backward, str(exchange)))
 		crypto.run_arbitrage_backward(exchange, alt)
 
 """
