@@ -114,7 +114,6 @@ bittrex_alternatives = [
 	'PAY',
 	'POWR',
 	'QTUM',
-	'REP',
 	'SC',
 	'SNT',
 	'SOLVE',

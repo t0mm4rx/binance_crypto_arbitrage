@@ -121,31 +121,31 @@ class Crypto:
 		if (amount_percentage):
 			asset2_available = self.get_balance(exchange, asset2) * amount_percentage
 			amount = asset2_available / self.get_price(exchange, asset1, asset2, mode='ask')
-			print("Buying {:.6} {} with {:.2f}% ({:.8f}) of {} available on {}.".format(
+			self.log("Buying {:.6} {} with {:.2f}% ({:.8f}) of {} available on {}.".format(
 				amount,
 				asset1,
 				amount_percentage * 100,
 				asset2_available,
 				asset2,
 				exchange
-			))
+			), mode="log")
 			exchange.createMarketBuyOrder(
 				'{}/{}'.format(asset1, asset2),
 				amount
 			)
 		elif (amount):
-			print("Buying {:.6f} {} with {} on {}.".format(
+			self.log("Buying {:.6f} {} with {} on {}.".format(
 				amount,
 				asset1,
 				asset2,
 				exchange
-			))
+			), mode="log")
 			exchange.createMarketBuyOrder(
 				'{}/{}'.format(asset1, asset2),
 				amount
 			)
 		else:
-			print("Amount should be given, not buying!")
+			self.log("Amount should be given, not buying!", mode="log")
 			return
 
 	"""
@@ -155,30 +155,30 @@ class Crypto:
 	def sell(self, exchange, asset1, asset2, amount_percentage=None, amount=None):
 		if (amount_percentage):
 			amount = self.get_balance(exchange, asset1) * amount_percentage
-			print("Selling {:.2f}% ({:.6f}) of {} to {} on {}.".format(
+			self.log("Selling {:.2f}% ({:.6f}) of {} to {} on {}.".format(
 				amount_percentage * 100,
 				amount,
 				asset1,
 				asset2,
 				exchange
-			))
+			), mode="log")
 			exchange.createMarketSellOrder(
 				'{}/{}'.format(asset1, asset2),
 				amount
 			)
 		elif (amount):
-			print("Selling {} {} to {} on {}.".format(
+			self.log("Selling {} {} to {} on {}.".format(
 				amount,
 				asset1,
 				asset2,
 				exchange
-			))
+			), mode="log")
 			exchange.createMarketSellOrder(
 				'{}/{}'.format(asset1, asset2),
 				amount
 			)
 		else:
-			print("Amount should be given, not selling!")
+			self.log("Amount should be given, not selling!", mode="log")
 			return
 
 	"""
@@ -186,7 +186,7 @@ class Crypto:
 		ETH -> ALT -> BTC -> ETH
 	"""
 	def run_arbitrage_forward(self, exchange, asset):
-		print("Arbitrage on {}: ETH -> {} -> BTC -> ETH".format(exchange, asset))
+		self.log("Arbitrage on {}: ETH -> {} -> BTC -> ETH".format(exchange, asset), mode="log")
 		balance_before = self.get_balance(exchange, "ETH")
 		self.buy(exchange, asset, "ETH", amount_percentage=0.8)
 		self.sell(exchange, asset, "BTC", amount_percentage=1)
@@ -194,7 +194,7 @@ class Crypto:
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
-		print("Différence: {:.6f} ETH = {:.6f} EUR".format(diff, diff_eur))
+		self.log("Différence: {:.6f} ETH = {:.6f} EUR".format(diff, diff_eur), mode="log")
 		self.balance += diff
 		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH, balance: {:7.6f}ETH".format(asset, str(exchange), diff, self.balance))
 
@@ -203,7 +203,7 @@ class Crypto:
 		ETH -> BTC -> ALT -> ETH
 	"""
 	def run_arbitrage_backward(self, exchange, asset):
-		print("Arbitrage on {}: ETH -> BTC -> {} -> ETH".format(exchange, asset))
+		self.log("Arbitrage on {}: ETH -> BTC -> {} -> ETH".format(exchange, asset), mode="log")
 		balance_before = self.get_balance(exchange, "ETH")
 		self.sell(exchange, "ETH", "BTC", amount_percentage=0.8)
 		self.buy(exchange, asset, "BTC", amount_percentage=1)
@@ -211,16 +211,18 @@ class Crypto:
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
-		print("Différence: {:.6f} ETH = {:.6f} EUR".format(diff, diff_eur))
+		self.log("Différence: {:.6f} ETH = {:.6f} EUR".format(diff, diff_eur), mode="log")
 		self.balance += diff
 		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH, balance: {:7.6f}ETH".format(asset, exchange, diff, self.balance))
 
 	"""
-		Logs in logs.txt file and in Telegram chat.
+		Logs text. Default mode will send a notification to Telegram, log mode will only write to logs.txt.
 	"""
-	def log(self, text):
+	def log(self, text, mode="notification"):
 		formatted_text = "[{}] {}".format(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), text)
-		self.bot.sendMessage(chat_id=secrets.TELEGRAM_CHAT, text=formatted_text)
-		with open('logs.txt', 'a+') as file:
-			file.write(formatted_text)
-			file.write("\n")
+		if (mode == "notification"):
+			self.bot.sendMessage(chat_id=secrets.TELEGRAM_CHAT, text=formatted_text)
+		if (mode == "notification" or mode == "log"):
+			with open('logs.txt', 'a+') as file:
+				file.write(formatted_text)
+				file.write("\n")

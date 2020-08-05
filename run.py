@@ -9,7 +9,7 @@ import sys
 def process_asset(crypto, exchange, alt):
 	delta_forward = crypto.estimate_arbitrage_forward(exchange, alt)
 	delta_backward = crypto.estimate_arbitrage_backward(exchange, alt)
-	print("{:10} / {:5}: {:8.4f}% / {:8.4f}%".format(str(exchange), alt, delta_forward, delta_backward))
+	crypto.log("{:10} / {:5}: {:8.4f}% / {:8.4f}%".format(str(exchange), alt, delta_forward, delta_backward), mode="log")
 	if (delta_forward > 0.5):
 		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_forward, str(exchange)))
 		crypto.run_arbitrage_forward(exchange, alt)
@@ -57,6 +57,6 @@ if (__name__ == "__main__"):
 		exchange = crypto.binance
 	if (exchange_str == "bittrex"):
 		exchange = crypto.bittrex
-	crypto.log("Starting to listen the {} markets".format(exchange_str))
+	crypto.log("Starting to listen the {} markets".format(exchange_str), mode="log")
 	thread_number = 4
 	run(crypto, exchange, thread_number)
