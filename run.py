@@ -10,11 +10,17 @@ def process_asset(crypto, exchange, alt):
 	delta_forward = crypto.estimate_arbitrage_forward(exchange, alt)
 	delta_backward = crypto.estimate_arbitrage_backward(exchange, alt)
 	crypto.log("{:10} / {:5}: {:8.4f}% / {:8.4f}%".format(str(exchange), alt, delta_forward, delta_backward), mode="log")
-	if (delta_forward > 0.5):
+	if (delta_forward > 0.1):
 		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_forward, str(exchange)))
+		crypto.log("{} -> ETH: {}".format(alt, crypto.get_price(exchange, alt, 'ETH', mode='ask')), mode="log")
+		crypto.log("{} -> BTC: {}".format(alt, crypto.get_price(exchange, alt, 'BTC', mode='bid')), mode="log")
+		crypto.log("ETH -> BTC: {}".format(crypto.get_price(exchange, 'ETH', 'BTC', mode='ask')), mode="log")
 		crypto.run_arbitrage_forward(exchange, alt)
-	elif (delta_backward > 0.5):
+	elif (delta_backward > 0.1):
 		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_backward, str(exchange)))
+		crypto.log("ETH -> BTC: {}".format(crypto.get_price(exchange, 'ETH', 'BTC', mode='bid')), mode="log")
+		crypto.log("{} -> ETH: {}".format(alt, crypto.get_price(exchange, alt, 'ETH', mode='ask')), mode="log")
+		crypto.log("{} -> BTC: {}".format(alt, crypto.get_price(exchange, alt, 'BTC', mode='bid')), mode="log")
 		crypto.run_arbitrage_backward(exchange, alt)
 
 """

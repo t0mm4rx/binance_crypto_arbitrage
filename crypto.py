@@ -41,6 +41,9 @@ class Crypto:
 			'ticker': ticker
 		})
 
+	"""
+		Init exchanges.
+	"""
 	def init_ccxt(self):
 		self.binance = ccxt.binance({
 			'apiKey': secrets.BINANCE_KEY,
