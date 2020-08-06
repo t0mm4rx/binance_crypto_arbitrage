@@ -59,10 +59,14 @@ class Crypto:
 		Get your balance for given asset.
 	"""
 	def get_balance(self, exchange, asset):
-		balance = exchange.fetchBalance()
-		if (asset in balance):
-			return balance[asset]['free']
-		return 0
+		try:
+			balance = exchange.fetchBalance()
+			if (asset in balance):
+				return balance[asset]['free']
+			return 0
+		except Exception as e:
+			self.log("Error while getting balance: {}".format(str(e)), mode="log")
+			raise
 
 	"""
  		Get the amount of value received after fees.
@@ -77,17 +81,21 @@ class Crypto:
 		Get an asset price, mode can be average, bid or ask.
 	"""
 	def get_price(self, exchange, asset1, asset2, mode='average'):
-		ticker = None
-		if (self.get_price_cache(exchange, asset1, asset2)):
-			ticker = self.get_price_cache(exchange, asset1, asset2)
-		else:
-			ticker = exchange.fetchTicker('{}/{}'.format(asset1, asset2))
-			self.cache_price(exchange, asset1, asset2, ticker)
-		if (mode == 'bid'):
-			return ticker['bid']
-		if (mode == 'ask'):
-			return ticker['ask']
-		return (ticker['ask'] + ticker['bid']) / 2
+		try:
+			ticker = None
+			if (self.get_price_cache(exchange, asset1, asset2)):
+				ticker = self.get_price_cache(exchange, asset1, asset2)
+			else:
+				ticker = exchange.fetchTicker('{}/{}'.format(asset1, asset2))
+				self.cache_price(exchange, asset1, asset2, ticker)
+			if (mode == 'bid'):
+				return ticker['bid']
+			if (mode == 'ask'):
+				return ticker['ask']
+			return (ticker['ask'] + ticker['bid']) / 2
+		except Exception as e:
+			self.log("Error while fetching price for {}/{}: {}".format(asset1, asset2, str(e)), mode="log")
+			raise
 
 	"""
 		Estimate the profit from backward arbitrage on given asset.
@@ -118,68 +126,76 @@ class Crypto:
 		of the given asset, or a percentage of all your balance.
 	"""
 	def buy(self, exchange, asset1, asset2, amount_percentage=None, amount=None):
-		if (amount_percentage):
-			asset2_available = self.get_balance(exchange, asset2) * amount_percentage
-			amount = asset2_available / self.get_price(exchange, asset1, asset2, mode='ask')
-			self.log("Buying {:.6} {} with {:.2f}% ({:.8f}) of {} available on {}.".format(
-				amount,
-				asset1,
-				amount_percentage * 100,
-				asset2_available,
-				asset2,
-				exchange
-			), mode="log")
-			exchange.createMarketBuyOrder(
-				'{}/{}'.format(asset1, asset2),
-				amount
-			)
-		elif (amount):
-			self.log("Buying {:.6f} {} with {} on {}.".format(
-				amount,
-				asset1,
-				asset2,
-				exchange
-			), mode="log")
-			exchange.createMarketBuyOrder(
-				'{}/{}'.format(asset1, asset2),
-				amount
-			)
-		else:
-			self.log("Amount should be given, not buying!", mode="log")
-			return
+		try:
+			if (amount_percentage):
+				asset2_available = self.get_balance(exchange, asset2) * amount_percentage
+				amount = asset2_available / self.get_price(exchange, asset1, asset2, mode='ask')
+				self.log("Buying {:.6} {} with {:.2f}% ({:.8f}) of {} available on {}.".format(
+					amount,
+					asset1,
+					amount_percentage * 100,
+					asset2_available,
+					asset2,
+					exchange
+				), mode="log")
+				exchange.createMarketBuyOrder(
+					'{}/{}'.format(asset1, asset2),
+					amount
+				)
+			elif (amount):
+				self.log("Buying {:.6f} {} with {} on {}.".format(
+					amount,
+					asset1,
+					asset2,
+					exchange
+				), mode="log")
+				exchange.createMarketBuyOrder(
+					'{}/{}'.format(asset1, asset2),
+					amount
+				)
+			else:
+				self.log("Amount should be given, not buying!", mode="log")
+				return
+		except Exception as e:
+			self.log("Error while buying: {}".format(str(e)), mode="log")
+			raise
 
 	"""
 		Create a market sell order. You can specify either to sell a fixed amount
 		of the given asset, or a percentage of all your balance.
 	"""
 	def sell(self, exchange, asset1, asset2, amount_percentage=None, amount=None):
-		if (amount_percentage):
-			amount = self.get_balance(exchange, asset1) * amount_percentage
-			self.log("Selling {:.2f}% ({:.6f}) of {} to {} on {}.".format(
-				amount_percentage * 100,
-				amount,
-				asset1,
-				asset2,
-				exchange
-			), mode="log")
-			exchange.createMarketSellOrder(
-				'{}/{}'.format(asset1, asset2),
-				amount
-			)
-		elif (amount):
-			self.log("Selling {} {} to {} on {}.".format(
-				amount,
-				asset1,
-				asset2,
-				exchange
-			), mode="log")
-			exchange.createMarketSellOrder(
-				'{}/{}'.format(asset1, asset2),
-				amount
-			)
-		else:
-			self.log("Amount should be given, not selling!", mode="log")
-			return
+		try:
+			if (amount_percentage):
+				amount = self.get_balance(exchange, asset1) * amount_percentage
+				self.log("Selling {:.2f}% ({:.6f}) of {} to {} on {}.".format(
+					amount_percentage * 100,
+					amount,
+					asset1,
+					asset2,
+					exchange
+				), mode="log")
+				exchange.createMarketSellOrder(
+					'{}/{}'.format(asset1, asset2),
+					amount
+				)
+			elif (amount):
+				self.log("Selling {} {} to {} on {}.".format(
+					amount,
+					asset1,
+					asset2,
+					exchange
+				), mode="log")
+				exchange.createMarketSellOrder(
+					'{}/{}'.format(asset1, asset2),
+					amount
+				)
+			else:
+				self.log("Amount should be given, not selling!", mode="log")
+				return
+		except Exception as e:
+			self.log("Error while selling: {}".format(str(e)), mode="log")
+			raise
 
 	"""
 		Executes forward arbitrage on given asset:
