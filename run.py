@@ -1,3 +1,12 @@
+"""
+	Main logic of the bot.
+	It's an endless loop that scans opportunity for given exchange and executes
+	triarb if found.
+	It's multi-threaded.
+	The run function is on the parent thread. The process_asset if run on
+	children threads.
+"""
+
 from crypto import Crypto
 import currencies
 import threading
@@ -7,20 +16,21 @@ import sys
 	Check if an asset makes profit, if yes we execute the arbitrage
 """
 def process_asset(crypto, exchange, alt):
+	threshold = 0.1
 	delta_forward = crypto.estimate_arbitrage_forward(exchange, alt)
 	delta_backward = crypto.estimate_arbitrage_backward(exchange, alt)
-	crypto.log("{:10} / {:5}: {:8.4f}% / {:8.4f}%".format(str(exchange), alt, delta_forward, delta_backward), mode="log")
-	if (delta_forward > 0.1):
-		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_forward, str(exchange)))
-		crypto.log("{} -> ETH: {}".format(alt, crypto.get_price(exchange, alt, 'ETH', mode='ask')), mode="log")
-		crypto.log("{} -> BTC: {}".format(alt, crypto.get_price(exchange, alt, 'BTC', mode='bid')), mode="log")
-		crypto.log("ETH -> BTC: {}".format(crypto.get_price(exchange, 'ETH', 'BTC', mode='ask')), mode="log")
+	crypto.log("{:10} / {:5}: {:8.4f}% / {:8.4f}%".format(str(exchange), alt, delta_forward, delta_backward))
+	if (delta_forward > threshold):
+		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_forward, str(exchange)), mode="notification")
+		crypto.log("{} -> ETH: {}".format(alt, crypto.get_price(exchange, alt, 'ETH', mode='ask')))
+		crypto.log("{} -> BTC: {}".format(alt, crypto.get_price(exchange, alt, 'BTC', mode='bid')))
+		crypto.log("ETH -> BTC: {}".format(crypto.get_price(exchange, 'ETH', 'BTC', mode='ask')))
 		crypto.run_arbitrage_forward(exchange, alt)
-	elif (delta_backward > 0.1):
-		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_backward, str(exchange)))
-		crypto.log("ETH -> BTC: {}".format(crypto.get_price(exchange, 'ETH', 'BTC', mode='bid')), mode="log")
-		crypto.log("{} -> ETH: {}".format(alt, crypto.get_price(exchange, alt, 'ETH', mode='ask')), mode="log")
-		crypto.log("{} -> BTC: {}".format(alt, crypto.get_price(exchange, alt, 'BTC', mode='bid')), mode="log")
+	elif (delta_backward > threshold):
+		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_backward, str(exchange)), mode="notification")
+		crypto.log("ETH -> BTC: {}".format(crypto.get_price(exchange, 'ETH', 'BTC', mode='bid')))
+		crypto.log("{} -> ETH: {}".format(alt, crypto.get_price(exchange, alt, 'ETH', mode='ask')))
+		crypto.log("{} -> BTC: {}".format(alt, crypto.get_price(exchange, alt, 'BTC', mode='bid')))
 		crypto.run_arbitrage_backward(exchange, alt)
 
 """
@@ -63,6 +73,6 @@ if (__name__ == "__main__"):
 		exchange = crypto.binance
 	if (exchange_str == "bittrex"):
 		exchange = crypto.bittrex
-	crypto.log("Starting to listen the {} markets".format(exchange_str), mode="log")
+	crypto.log("Starting to listen the {} markets".format(exchange_str))
 	thread_number = 4
 	run(crypto, exchange, thread_number)
