@@ -19,7 +19,8 @@ class Crypto:
 	bittrex = None
 	balance = 0
 	bot = None
-	cache = []
+	cache_prices = []
+	cache_order_books = []
 
 	def __init__(self):
 		self.init_ccxt()
@@ -29,7 +30,8 @@ class Crypto:
 		Reset caches.
 	"""
 	def flush_cache(self):
-		self.cache = []
+		self.cache_prices = []
+		self.cache_order_books = []
 
 	"""
 		Check if a price is cached, if yes, returns it.
@@ -38,25 +40,51 @@ class Crypto:
 		asset2:		second asset.
 	"""
 	def get_price_cache(self, exchange, asset1, asset2):
-		for item in self.cache:
+		for item in self.cache_prices:
 			if (item['exchange'] == str(exchange) and item['asset1'] == asset1 and item['asset2'] == asset2):
 				return item['ticker']
 		return None
 
 	"""
+		Check if an order book is cached, if yes, returns it.
+		exchange:	the wanted exchange.
+		asset1:		first asset.
+		asset2:		second asset.
+	"""
+	def get_order_book_cache(self, exchange, asset1, asset2):
+		for item in self.cache_order_books:
+			if (item['exchange'] == str(exchange) and item['asset1'] == asset1 and item['asset2'] == asset2):
+				return item['book']
+		return None
+
+	"""
 		Put price in cache.
-		Check if a price is cached, if yes, returns it.
 		exchange:	the wanted exchange.
 		asset1:		first asset.
 		asset2:		second asset.
 		ticker:		the ccxt object that contains the price to cache.
 	"""
 	def cache_price(self, exchange, asset1, asset2, ticker):
-		self.cache.append({
+		self.cache_prices.append({
 			'exchange': str(exchange),
 			'asset1': asset1,
 			'asset2': asset2,
 			'ticker': ticker
+		})
+
+	"""
+		Put order book in cache.
+		exchange:	the wanted exchange.
+		asset1:		first asset.
+		asset2:		second asset.
+		book:		the ccxt object that contains the order book to cache.
+	"""
+	def cache_order_book(self, exchange, asset1, asset2, book):
+		self.cache_order_books.append({
+			'exchange': str(exchange),
+			'asset1': asset1,
+			'asset2': asset2,
+			'book': book
 		})
 
 	"""
@@ -145,8 +173,11 @@ class Crypto:
 			print('Get order book: mode should be bids or asks.')
 			return None
 		try:
-			data = exchange.fetchOrderBook('{}/{}'.format(asset1, asset2))
-			return data[mode]
+			order_book = self.get_order_book_cache(exchange, asset1, asset2)
+			if (not order_book):
+				order_book = exchange.fetchOrderBook('{}/{}'.format(asset1, asset2))
+				self.cache_order_book(exchange, asset1, asset2, order_book)
+			return order_book[mode]
 		except Exception as e:
 			self.log("Error while fetching order book for {}/{}: {}".format(asset1, asset2, str(e)))
 			return None
