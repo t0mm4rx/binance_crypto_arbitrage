@@ -251,7 +251,6 @@ class Crypto:
 					amount,
 					limit
 				)
-				return False
 				if (timeout):
 					time.sleep(timeout)
 					if (self.is_open_order(exchange, asset1, asset2)):
@@ -260,6 +259,8 @@ class Crypto:
 						return False
 					else:
 						return True
+				else:
+					return False
 		except Exception as e:
 			self.log("Error while buying: {}".format(str(e)))
 			return False
@@ -301,7 +302,6 @@ class Crypto:
 					amount,
 					limit
 				)
-				return False
 				if (timeout):
 					time.sleep(timeout)
 					if (self.is_open_order(exchange, asset1, asset2)):
@@ -310,6 +310,8 @@ class Crypto:
 						return False
 					else:
 						return True
+				else:
+					return False
 		except Exception as e:
 			self.log("Error while selling: {}".format(str(e)))
 			return False
@@ -349,6 +351,42 @@ class Crypto:
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
 		self.balance += diff
 		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.6f} EUR), balance: {:7.6f}ETH".format(asset, str(exchange), diff, diff_eur, self.balance), mode="notification")
+
+	"""
+		Get the safest and lowest price to limit buy the given asset.
+		We start from the third lowest price to avoid volatility, then we
+		returns the first price with enough value to fullfill the order.
+		exchange:	the wanted exchange.
+		asset1:		first asset.
+		asset2:		second asset.
+		returns:	the advised price to place limit buy order.
+	"""
+	def get_buy_limit_price(self, exchange, asset1, asset2, amount=1):
+		bids = self.get_order_book(exchange, asset1, asset2, mode="asks")
+		bids.sort()
+		if (len(bids) < 3):
+			return None
+		for bid in bids[3:]:
+			if (bid[1] >= amount):
+				return bid[0]
+
+	"""
+		Get the safest and highest price to limit sell the given asset.
+		We start from the third highest price to avoid volatility, then we
+		returns the first price with enough value to fullfill the order.
+		exchange:	the wanted exchange.
+		asset1:		first asset.
+		asset2:		second asset.
+		returns:	the advised price to place limit sell order.
+	"""
+	def get_sell_limit_price(self, exchange, asset1, asset2, amount=1):
+		asks = self.get_order_book(exchange, asset1, asset2, mode="bids")
+		asks.sort(reverse=True)
+		if (len(asks) < 3):
+			return None
+		for ask in asks[3:]:
+			if (ask[1] >= amount):
+				return ask[0]
 
 	"""
 		Logs given string.
