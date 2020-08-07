@@ -101,6 +101,43 @@ class Crypto:
 			raise
 
 	"""
+		Get order book for given asset.
+	"""
+	def get_order_book(self, exchange, asset1, asset2, mode="bids"):
+		if (mode != 'bids' and mode != 'asks'):
+			print('Get order book: mode should be bids or asks.')
+			return
+		try:
+			data = exchange.fetchOrderBook('{}/{}'.format(asset1, asset2))
+			return data[mode]
+		except Exception as e:
+			self.log("Error while fetching order book for {}/{}: {}".format(asset1, asset2, str(e)), mode="log")
+			raise
+
+	"""
+		Is there any open order for given asset.
+	"""
+	def is_open_order(self, exchange, asset1, asset2):
+		try:
+			data = exchange.fetchOpenOrders('{}/{}'.format(asset1, asset2))
+			return len(data) > 0
+		except Exception as e:
+			self.log("Error while fetching open orders for {}/{}: {}".format(asset1, asset2, str(e)), mode="log")
+			raise
+
+	"""
+		Cancel orders for given asset.
+	"""
+	def cancel_orders(self, exchange, asset1, asset2):
+		try:
+			orders = exchange.fetchOpenOrders('{}/{}'.format(asset1, asset2))
+			for order in orders:
+				exchange.cancelOrder(order['id'], '{}/{}'.format(asset1, asset2))
+		except Exception as e:
+			self.log("Error while canceling orders for {}/{}: {}".format(asset1, asset2, str(e)), mode="log")
+			raise
+
+	"""
 		Estimate the profit from backward arbitrage on given asset.
 	"""
 	def estimate_arbitrage_forward(self, exchange, asset):
@@ -125,10 +162,12 @@ class Crypto:
 			return -1
 
 	"""
-		Create a market buy order. You can specify either to buy a fixed amount
+		Create a buy order. You can specify either to buy a fixed amount
 		of the given asset, or a percentage of all your balance.
+		If limit is set it will be a limit order.
+		If timeout is set the limit order will be close after timeout.
 	"""
-	def buy(self, exchange, asset1, asset2, amount_percentage=None, amount=None):
+	def buy(self, exchange, asset1, asset2, amount_percentage=None, amount=None, limit=None, timeout=None):
 		try:
 			if (amount_percentage):
 				asset2_available = self.get_balance(exchange, asset2) * amount_percentage
@@ -141,10 +180,17 @@ class Crypto:
 					asset2,
 					exchange
 				), mode="log")
-				exchange.createMarketBuyOrder(
-					'{}/{}'.format(asset1, asset2),
-					amount
-				)
+				if (not limit):
+					exchange.createMarketBuyOrder(
+						'{}/{}'.format(asset1, asset2),
+						amount
+					)
+				else:
+					exchange.createLimitBuyOrder(
+						'{}/{}'.format(asset1, asset2),
+						amount,
+						limit
+					)
 			elif (amount):
 				self.log("Buying {:.6f} {} with {} on {}.".format(
 					amount,
@@ -152,10 +198,17 @@ class Crypto:
 					asset2,
 					exchange
 				), mode="log")
-				exchange.createMarketBuyOrder(
-					'{}/{}'.format(asset1, asset2),
-					amount
-				)
+				if (not limit):
+					exchange.createMarketBuyOrder(
+						'{}/{}'.format(asset1, asset2),
+						amount
+					)
+				else:
+					exchange.createLimitBuyOrder(
+						'{}/{}'.format(asset1, asset2),
+						amount,
+						limit
+					)
 			else:
 				self.log("Amount should be given, not buying!", mode="log")
 				return
@@ -164,10 +217,12 @@ class Crypto:
 			raise
 
 	"""
-		Create a market sell order. You can specify either to sell a fixed amount
+		Create a sell order. You can specify either to sell a fixed amount
 		of the given asset, or a percentage of all your balance.
+		If limit is set it will be a limit order.
+		If timeout is set the limit order will be close after timeout.
 	"""
-	def sell(self, exchange, asset1, asset2, amount_percentage=None, amount=None):
+	def sell(self, exchange, asset1, asset2, amount_percentage=None, amount=None, limit=None):
 		try:
 			if (amount_percentage):
 				amount = self.get_balance(exchange, asset1) * amount_percentage
@@ -178,10 +233,18 @@ class Crypto:
 					asset2,
 					exchange
 				), mode="log")
-				exchange.createMarketSellOrder(
-					'{}/{}'.format(asset1, asset2),
-					amount
-				)
+				if (not limit):
+					exchange.createMarketSellOrder(
+						'{}/{}'.format(asset1, asset2),
+						amount
+					)
+				else:
+					exchange.createLimitSellOrder(
+						'{}/{}'.format(asset1, asset2),
+						amount,
+						limit
+					)
+
 			elif (amount):
 				self.log("Selling {} {} to {} on {}.".format(
 					amount,
@@ -189,10 +252,17 @@ class Crypto:
 					asset2,
 					exchange
 				), mode="log")
-				exchange.createMarketSellOrder(
-					'{}/{}'.format(asset1, asset2),
-					amount
-				)
+				if (not limit):
+					exchange.createMarketSellOrder(
+						'{}/{}'.format(asset1, asset2),
+						amount
+					)
+				else:
+					exchange.createLimitSellOrder(
+						'{}/{}'.format(asset1, asset2),
+						amount,
+						limit
+					)
 			else:
 				self.log("Amount should be given, not selling!", mode="log")
 				return
@@ -232,7 +302,7 @@ class Crypto:
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
 		self.log("Différence: {:.6f} ETH = {:.6f} EUR".format(diff, diff_eur), mode="log")
 		self.balance += diff
-		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH, balance: {:7.6f}ETH".format(asset, exchange, diff, self.balance))
+		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH, balance: {:7.6f}ETH".format(asset, str(exchange), diff, self.balance))
 
 	"""
 		Logs text. Default mode will send a notification to Telegram, log mode will only write to logs.txt.
