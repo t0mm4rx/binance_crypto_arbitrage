@@ -16,21 +16,15 @@ import sys
 	Check if an asset makes profit, if yes we execute the arbitrage
 """
 def process_asset(crypto, exchange, alt):
-	threshold = 0.1
+	threshold = -0.1
 	delta_forward = crypto.estimate_arbitrage_forward(exchange, alt)
 	delta_backward = crypto.estimate_arbitrage_backward(exchange, alt)
 	crypto.log("{:10} / {:5}: {:8.4f}% / {:8.4f}%".format(str(exchange), alt, delta_forward, delta_backward))
 	if (delta_forward > threshold):
 		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_forward, str(exchange)), mode="notification")
-		crypto.log("{} -> ETH: {}".format(alt, crypto.get_price(exchange, alt, 'ETH', mode='ask')))
-		crypto.log("{} -> BTC: {}".format(alt, crypto.get_price(exchange, alt, 'BTC', mode='bid')))
-		crypto.log("ETH -> BTC: {}".format(crypto.get_price(exchange, 'ETH', 'BTC', mode='ask')))
 		crypto.run_arbitrage_forward(exchange, alt)
 	elif (delta_backward > threshold):
 		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_backward, str(exchange)), mode="notification")
-		crypto.log("ETH -> BTC: {}".format(crypto.get_price(exchange, 'ETH', 'BTC', mode='bid')))
-		crypto.log("{} -> ETH: {}".format(alt, crypto.get_price(exchange, alt, 'ETH', mode='ask')))
-		crypto.log("{} -> BTC: {}".format(alt, crypto.get_price(exchange, alt, 'BTC', mode='bid')))
 		crypto.run_arbitrage_backward(exchange, alt)
 
 """

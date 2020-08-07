@@ -223,9 +223,10 @@ class Crypto:
 	def estimate_arbitrage_forward(self, exchange, asset):
 		try:
 			alt_ETH = self.get_buy_limit_price(exchange, asset, 'ETH')
-			print(alt_ETH, self.get_price(exchange, asset, 'ETH', mode='ask'))
 			alt_BTC = self.get_sell_limit_price(exchange, asset, 'BTC')
-			print(alt_BTC, self.get_price(exchange, asset, 'BTC', mode='bid'))
+			if (not alt_BTC or not alt_ETH):
+				self.log("Less than 3 orders for {} on {}, skipping.".format(asset, str(exchange)))
+				return -100
 			step1 = (1 / alt_ETH) * self.get_fees(exchange)
 			step2 = (step1 * alt_BTC) * self.get_fees(exchange)
 			step3 = (step2 / self.get_price(exchange, 'ETH', 'BTC', mode='ask')) * self.get_fees(exchange)
@@ -241,9 +242,14 @@ class Crypto:
 	"""
 	def estimate_arbitrage_backward(self, exchange, asset):
 		try:
+			alt_BTC = self.get_buy_limit_price(exchange, asset, 'BTC')
+			alt_ETH = self.get_sell_limit_price(exchange, asset, 'ETH')
+			if (not alt_BTC or not alt_ETH):
+				self.log("Less than 3 orders for {} on {}, skipping.".format(asset, str(exchange)))
+				return -100
 			step1 = (self.get_price(exchange, 'ETH', 'BTC', mode='bid')) * self.get_fees(exchange)
-			step2 = (step1 / self.get_price(exchange, asset, 'BTC', mode='ask')) * self.get_fees(exchange)
-			step3 = (step2 * self.get_price(exchange, asset, 'ETH', mode='bid')) * self.get_fees(exchange)
+			step2 = (step1 / alt_BTC) * self.get_fees(exchange)
+			step3 = (step2 * alt_ETH) * self.get_fees(exchange)
 			return (step3 - 1) * 100
 		except ZeroDivisionError:
 			return -1
@@ -274,7 +280,10 @@ class Crypto:
 				asset2,
 				exchange
 			))
+			if (limit):
+				self.log("Limit @{}.".format(limit))
 			if (not limit):
+				self.log("Buying at market price.")
 				exchange.createMarketBuyOrder(
 					'{}/{}'.format(asset1, asset2),
 					amount
@@ -293,6 +302,7 @@ class Crypto:
 						self.log("Canceled limit order for {}/{} after timeout.".format(asset1, asset2))
 						return False
 					else:
+						self.log("Limit order executed.")
 						return True
 				else:
 					return False
@@ -325,7 +335,10 @@ class Crypto:
 				asset2,
 				exchange
 			))
+			if (limit):
+				self.log("Limit @{}.".format(limit))
 			if (not limit):
+				self.log("Selling at market price.")
 				exchange.createMarketSellOrder(
 					'{}/{}'.format(asset1, asset2),
 					amount
@@ -344,6 +357,7 @@ class Crypto:
 						self.log("Canceled limit order for {}/{} after timeout.".format(asset1, asset2))
 						return False
 					else:
+						self.log("Limit order executed.")
 						return True
 				else:
 					return False
@@ -360,14 +374,23 @@ class Crypto:
 	def run_arbitrage_forward(self, exchange, asset):
 		self.log("Arbitrage on {}: ETH -> {} -> BTC -> ETH".format(exchange, asset))
 		balance_before = self.get_balance(exchange, "ETH")
-		self.buy(exchange, asset, "ETH", amount_percentage=0.8)
-		self.sell(exchange, asset, "BTC", amount_percentage=1)
+		alt_ETH = self.get_buy_limit_price(exchange, asset, 'ETH')
+		alt_BTC = self.get_sell_limit_price(exchange, asset, 'BTC')
+		result1 = self.buy(exchange, asset, "ETH", amount_percentage=0.8, limit=alt_ETH, timeout=1)
+		if (not result1):
+			self.log("Failed to convert ETH to {} @{}.".format(asset, alt_ETH))
+			return
+		result2 = self.sell(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC, timeout=1)
+		if (not result2):
+			self.log("Failed to convert {} to BTC @{}. {} should be remaining on wallet.".format(asset, alt_BTC, asset))
+			return
 		self.buy(exchange, "ETH", "BTC", amount_percentage=1)
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
 		self.balance += diff
 		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.6f} EUR), balance: {:7.6f}ETH".format(asset, str(exchange), diff, diff_eur, self.balance), mode="notification")
+		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
 
 	"""
 		Executes backward arbitrage on given asset:
@@ -378,14 +401,17 @@ class Crypto:
 	def run_arbitrage_backward(self, exchange, asset):
 		self.log("Arbitrage on {}: ETH -> BTC -> {} -> ETH".format(exchange, asset))
 		balance_before = self.get_balance(exchange, "ETH")
+		alt_BTC = self.get_buy_limit_price(exchange, asset, 'BTC')
+		alt_ETH = self.get_sell_limit_price(exchange, asset, 'ETH')
 		self.sell(exchange, "ETH", "BTC", amount_percentage=0.8)
-		self.buy(exchange, asset, "BTC", amount_percentage=1)
-		self.sell(exchange, asset, "ETH", amount_percentage=1)
+		self.buy(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC)
+		self.sell(exchange, asset, "ETH", amount_percentage=1, limit=alt_ETH)
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
 		self.balance += diff
 		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.6f} EUR), balance: {:7.6f}ETH".format(asset, str(exchange), diff, diff_eur, self.balance), mode="notification")
+		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
 
 	"""
 		Get the safest and lowest price to limit buy the given asset.
