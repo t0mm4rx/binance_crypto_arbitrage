@@ -222,8 +222,12 @@ class Crypto:
 	"""
 	def estimate_arbitrage_forward(self, exchange, asset):
 		try:
-			step1 = (1 / self.get_price(exchange, asset, 'ETH', mode='ask')) * self.get_fees(exchange)
-			step2 = (step1 * self.get_price(exchange, asset, 'BTC', mode='bid')) * self.get_fees(exchange)
+			alt_ETH = self.get_buy_limit_price(exchange, asset, 'ETH')
+			print(alt_ETH, self.get_price(exchange, asset, 'ETH', mode='ask'))
+			alt_BTC = self.get_sell_limit_price(exchange, asset, 'BTC')
+			print(alt_BTC, self.get_price(exchange, asset, 'BTC', mode='bid'))
+			step1 = (1 / alt_ETH) * self.get_fees(exchange)
+			step2 = (step1 * alt_BTC) * self.get_fees(exchange)
 			step3 = (step2 / self.get_price(exchange, 'ETH', 'BTC', mode='ask')) * self.get_fees(exchange)
 			return (step3 - 1) * 100
 		except ZeroDivisionError:
