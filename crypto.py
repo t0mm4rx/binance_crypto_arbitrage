@@ -2,6 +2,7 @@ import ccxt
 import secrets
 from datetime import datetime
 import telegram
+import time
 
 class Crypto:
 
@@ -172,46 +173,28 @@ class Crypto:
 			if (amount_percentage):
 				asset2_available = self.get_balance(exchange, asset2) * amount_percentage
 				amount = asset2_available / self.get_price(exchange, asset1, asset2, mode='ask')
-				self.log("Buying {:.6} {} with {:.2f}% ({:.8f}) of {} available on {}.".format(
-					amount,
-					asset1,
-					amount_percentage * 100,
-					asset2_available,
-					asset2,
-					exchange
-				), mode="log")
-				if (not limit):
-					exchange.createMarketBuyOrder(
-						'{}/{}'.format(asset1, asset2),
-						amount
-					)
-				else:
-					exchange.createLimitBuyOrder(
-						'{}/{}'.format(asset1, asset2),
-						amount,
-						limit
-					)
-			elif (amount):
-				self.log("Buying {:.6f} {} with {} on {}.".format(
-					amount,
-					asset1,
-					asset2,
-					exchange
-				), mode="log")
-				if (not limit):
-					exchange.createMarketBuyOrder(
-						'{}/{}'.format(asset1, asset2),
-						amount
-					)
-				else:
-					exchange.createLimitBuyOrder(
-						'{}/{}'.format(asset1, asset2),
-						amount,
-						limit
-					)
+			self.log("Buying {:.6} {} with {} on {}.".format(
+				amount,
+				asset1,
+				asset2,
+				exchange
+			), mode="log")
+			if (not limit):
+				exchange.createMarketBuyOrder(
+					'{}/{}'.format(asset1, asset2),
+					amount
+				)
 			else:
-				self.log("Amount should be given, not buying!", mode="log")
-				return
+				exchange.createLimitBuyOrder(
+					'{}/{}'.format(asset1, asset2),
+					amount,
+					limit
+				)
+				if (timeout):
+					time.sleep(timeout)
+					if (self.is_open_order(exchange, asset1, asset2)):
+						self.cancel_orders(exchange, asset1, asset2)
+						self.log("Canceled limit order for {}/{} after timeout.".format(asset1, asset2), mode="log")
 		except Exception as e:
 			self.log("Error while buying: {}".format(str(e)), mode="log")
 			raise
@@ -222,50 +205,32 @@ class Crypto:
 		If limit is set it will be a limit order.
 		If timeout is set the limit order will be close after timeout.
 	"""
-	def sell(self, exchange, asset1, asset2, amount_percentage=None, amount=None, limit=None):
+	def sell(self, exchange, asset1, asset2, amount_percentage=None, amount=None, limit=None, timeout=None):
 		try:
 			if (amount_percentage):
 				amount = self.get_balance(exchange, asset1) * amount_percentage
-				self.log("Selling {:.2f}% ({:.6f}) of {} to {} on {}.".format(
-					amount_percentage * 100,
-					amount,
-					asset1,
-					asset2,
-					exchange
-				), mode="log")
-				if (not limit):
-					exchange.createMarketSellOrder(
-						'{}/{}'.format(asset1, asset2),
-						amount
-					)
-				else:
-					exchange.createLimitSellOrder(
-						'{}/{}'.format(asset1, asset2),
-						amount,
-						limit
-					)
-
-			elif (amount):
-				self.log("Selling {} {} to {} on {}.".format(
-					amount,
-					asset1,
-					asset2,
-					exchange
-				), mode="log")
-				if (not limit):
-					exchange.createMarketSellOrder(
-						'{}/{}'.format(asset1, asset2),
-						amount
-					)
-				else:
-					exchange.createLimitSellOrder(
-						'{}/{}'.format(asset1, asset2),
-						amount,
-						limit
-					)
+			self.log("Selling {:.6f} {} to {} on {}.".format(
+				amount,
+				asset1,
+				asset2,
+				exchange
+			), mode="log")
+			if (not limit):
+				exchange.createMarketSellOrder(
+					'{}/{}'.format(asset1, asset2),
+					amount
+				)
 			else:
-				self.log("Amount should be given, not selling!", mode="log")
-				return
+				exchange.createLimitSellOrder(
+					'{}/{}'.format(asset1, asset2),
+					amount,
+					limit
+				)
+				if (timeout):
+					time.sleep(timeout)
+					if (self.is_open_order(exchange, asset1, asset2)):
+						self.cancel_orders(exchange, asset1, asset2)
+						self.log("Canceled limit order for {}/{} after timeout.".format(asset1, asset2), mode="log")
 		except Exception as e:
 			self.log("Error while selling: {}".format(str(e)), mode="log")
 			raise
