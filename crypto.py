@@ -103,7 +103,7 @@ class Crypto:
 			'timeout': 30000,
 		    'enableRateLimit': True,
 		})
-		self.bitfinex = ccxt.bitfinex({
+		self.bitfinex = ccxt.bitfinex2({
 			'apiKey': secrets.BITFINEX_KEY,
 			'secret': secrets.BITFINEX_SECRET,
 			'timeout': 30000,
@@ -439,6 +439,8 @@ class Crypto:
 	"""
 	def get_buy_limit_price(self, exchange, asset1, asset2, amount=1):
 		bids = self.get_order_book(exchange, asset1, asset2, mode="asks")
+		if (not bids):
+			return None
 		bids.sort()
 		if (len(bids) < 3):
 			return None
@@ -457,6 +459,8 @@ class Crypto:
 	"""
 	def get_sell_limit_price(self, exchange, asset1, asset2, amount=1):
 		asks = self.get_order_book(exchange, asset1, asset2, mode="bids")
+		if (not asks):
+			return None
 		asks.sort(reverse=True)
 		if (len(asks) < 3):
 			return None
@@ -485,5 +489,5 @@ class Crypto:
 	"""
 	def get_waiting(self, exchange):
 		if (str(exchange) == "Bitfinex"):
-			return 10
+			return 2
 		return None

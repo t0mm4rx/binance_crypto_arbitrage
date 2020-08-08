@@ -44,13 +44,13 @@ def run(crypto, exchange, thread_number):
 			alts_batch = alts[i:i+thread_number]
 			threads = []
 			for asset in alts_batch:
+				if (crypto.get_waiting(exchange)):
+					time.sleep(crypto.get_waiting(exchange))
 				threads.append(threading.Thread(target=process_asset, args=(crypto, exchange, asset)))
 				threads[-1].start()
 			for thread in threads:
 				thread.join()
 			crypto.flush_cache()
-			if (crypto.get_waiting(exchange)):
-				time.sleep(crypto.get_waiting(exchange))
 
 """
 	Main
