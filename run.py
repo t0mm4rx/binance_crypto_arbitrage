@@ -11,6 +11,7 @@ from crypto import Crypto
 import currencies
 import threading
 import sys
+import time
 
 """
 	Check if an asset makes profit, if yes we execute the arbitrage
@@ -36,6 +37,8 @@ def run(crypto, exchange, thread_number):
 		alts = currencies.binance_alternatives
 	elif (str(exchange) == "Bittrex"):
 		alts = currencies.bittrex_alternatives
+	elif (str(exchange) == "Bitfinex"):
+		alts = currencies.bitfinex_alternatives
 	while True:
 		for i in range(0, len(alts), thread_number):
 			alts_batch = alts[i:i+thread_number]
@@ -46,6 +49,8 @@ def run(crypto, exchange, thread_number):
 			for thread in threads:
 				thread.join()
 			crypto.flush_cache()
+			if (crypto.get_waiting(exchange)):
+				time.sleep(crypto.get_waiting(exchange))
 
 """
 	Main
@@ -55,7 +60,7 @@ if (__name__ == "__main__"):
 		print("python3 run.py <exchange>")
 		exit()
 	exchange_str = sys.argv[1]
-	exchanges = ["binance", "bittrex"]
+	exchanges = ["binance", "bittrex", "bitfinex"]
 	if (not exchange_str in exchanges):
 		print("{} is not a valid exchange. Options:".format(exchange_str))
 		for exchange in exchanges:
@@ -67,6 +72,8 @@ if (__name__ == "__main__"):
 		exchange = crypto.binance
 	if (exchange_str == "bittrex"):
 		exchange = crypto.bittrex
+	if (exchange_str == "bitfinex"):
+		exchange = crypto.bitfinex
 	crypto.log("Starting to listen the {} markets".format(exchange_str))
 	thread_number = 4
 	run(crypto, exchange, thread_number)

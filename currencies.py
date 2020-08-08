@@ -177,3 +177,31 @@ bittrex_alternatives = [
 # 	'DGB',
 # 	'BCH'
 # ]
+
+bitfinex_alternatives = [
+	'IOTA',
+	'EOS',
+	'SAN',
+	'OMG',
+	'NEO',
+	'ETP',
+	'EDO',
+	'DATA',
+	'GNT',
+	'SNT',
+	'BAT',
+	'ZRX',
+	'TNB',
+	'TRX',
+	'REP',
+	'NEC',
+	'IOST',
+	'DAI',
+	'ODE',
+	'ANT',
+	'XLM',
+	'MKR',
+	'ATOM',
+	'LEO',
+	'USK'
+]

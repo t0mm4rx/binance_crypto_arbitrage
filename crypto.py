@@ -103,6 +103,12 @@ class Crypto:
 			'timeout': 30000,
 		    'enableRateLimit': True,
 		})
+		self.bitfinex = ccxt.bitfinex({
+			'apiKey': secrets.BITFINEX_KEY,
+			'secret': secrets.BITFINEX_SECRET,
+			'timeout': 30000,
+			'enableRateLimit': True,
+		})
 
 	"""
 		Get your balance for given asset.
@@ -124,13 +130,22 @@ class Crypto:
  		Get the multiplicator for each exchange. If the fee is 0.1%, then the
 		multiplicator will be 0.999.
 		exchange:	the wanted exchange.
+		mode:		buy or sell.
 		returns:	the multiplicator for the given exchange.
 	"""
-	def get_fees(self, exchange):
+	def get_fees(self, exchange, mode):
+		if (mode != 'buy' and mode != 'sell'):
+			print("Get fees: mode should be buy or sell.")
+			return
 		if (str(exchange) == "Binance"):
 			return 0.999
 		elif (str(exchange) == "Bittrex"):
 			return 0.998
+		elif (str(exchange) == "Bitfinex"):
+			if (mode == "buy"):
+				return 0.998
+			else:
+				return 0.999
 
 	"""
 		Get an asset price.
@@ -227,9 +242,9 @@ class Crypto:
 			if (not alt_BTC or not alt_ETH):
 				self.log("Less than 3 orders for {} on {}, skipping.".format(asset, str(exchange)))
 				return -100
-			step1 = (1 / alt_ETH) * self.get_fees(exchange)
-			step2 = (step1 * alt_BTC) * self.get_fees(exchange)
-			step3 = (step2 / self.get_price(exchange, 'ETH', 'BTC', mode='ask')) * self.get_fees(exchange)
+			step1 = (1 / alt_ETH) * self.get_fees(exchange, 'buy')
+			step2 = (step1 * alt_BTC) * self.get_fees(exchange, 'sell')
+			step3 = (step2 / self.get_price(exchange, 'ETH', 'BTC', mode='ask')) * self.get_fees(exchange, 'buy')
 			return (step3 - 1) * 100
 		except ZeroDivisionError:
 			return -1
@@ -247,9 +262,9 @@ class Crypto:
 			if (not alt_BTC or not alt_ETH):
 				self.log("Less than 3 orders for {} on {}, skipping.".format(asset, str(exchange)))
 				return -100
-			step1 = (self.get_price(exchange, 'ETH', 'BTC', mode='bid')) * self.get_fees(exchange)
-			step2 = (step1 / alt_BTC) * self.get_fees(exchange)
-			step3 = (step2 * alt_ETH) * self.get_fees(exchange)
+			step1 = (self.get_price(exchange, 'ETH', 'BTC', mode='bid')) * self.get_fees(exchange, 'sell')
+			step2 = (step1 / alt_BTC) * self.get_fees(exchange, 'buy')
+			step3 = (step2 * alt_ETH) * self.get_fees(exchange, 'sell')
 			return (step3 - 1) * 100
 		except ZeroDivisionError:
 			return -1
@@ -462,3 +477,13 @@ class Crypto:
 			with open('logs.txt', 'a+') as file:
 				file.write(formatted_text)
 				file.write("\n")
+
+	"""
+		Get the waiting time needed to bypass DDOS protection.
+		exchange:	the wanted exchange to limit.
+		returns:	None if no need to limit, a number of seconds to wait if there is.
+	"""
+	def get_waiting(self, exchange):
+		if (str(exchange) == "Bitfinex"):
+			return 10
+		return None

@@ -100,13 +100,26 @@ crypto.sell(crypto.binance, "ZIL", "BTC", amount=10)
 # SELL 100% of available ZIL for BTC at market price
 crypto.sell(crypto.binance, "ZIL", "BTC", amount_percentage=1)
 
-# Get compatible alt coins
+# Create limit buy/sell orders
 
+# Will buy ETH with BTC at 0.053 or better
+crypto.buy(crypto.binance, "ETH", "BTC", amount=0.3, limit=0.053)
+# Will sell ETH with BTC at 0.054 or better, if the order is not fullfilled after 3 seconds, we close the order
+crypto.sell(crypto.binance, "ETH", "BTC", amount=0.3, limit=0.054, timeout=3)
+
+# Get order book
+crypto.get_order_book(crypto.bitfinex, 'ETH', 'BTC', mode='asks')
+
+# Get compatible alt coins
 print(currencies.binance_alternatives)
 print(currencies.bittrex_alternatives)
 ```
 
-
+API calls to get_price and get_order_book are cached, if you want to fetch refreshed data:
+```python
+# Clear cache
+crypto.flush_cache()
+```
 
 ## ❤️ Want to participate ?
 
