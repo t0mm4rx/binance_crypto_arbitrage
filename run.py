@@ -17,7 +17,7 @@ import time
 	Check if an asset makes profit, if yes we execute the arbitrage
 """
 def process_asset(crypto, exchange, alt):
-	threshold = -0.5
+	threshold = -0.3
 	delta_forward = crypto.estimate_arbitrage_forward(exchange, alt)
 	delta_backward = crypto.estimate_arbitrage_backward(exchange, alt)
 	crypto.log("{:10} / {:5}: {:8.4f}% / {:8.4f}%".format(str(exchange), alt, delta_forward, delta_backward))
