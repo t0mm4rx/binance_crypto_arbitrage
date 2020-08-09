@@ -2,6 +2,7 @@ import ccxt
 import secrets
 from datetime import datetime
 import telegram
+import os
 import time
 
 """
@@ -17,7 +18,6 @@ class Crypto:
 
 	binance = None
 	bittrex = None
-	balance = 0
 	bot = None
 	cache_prices = []
 	cache_order_books = []
@@ -402,10 +402,10 @@ class Crypto:
 		self.buy(exchange, "ETH", "BTC", amount_percentage=1)
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before
+		self.save_gain(diff)
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
-		self.balance += diff
-		balance_eur = self.balance * self.get_price(exchange, 'ETH', 'EUR')
-		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR)".format(asset, str(exchange), diff, diff_eur, self.balance, balance_eur), mode="notification")
+		balance_eur = self.get_last_balance() * self.get_price(exchange, 'ETH', 'EUR')
+		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR)".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur), mode="notification")
 		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
 
 	"""
@@ -424,11 +424,12 @@ class Crypto:
 		self.sell(exchange, asset, "ETH", amount_percentage=1, limit=alt_ETH, timeout=1)
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before
+		self.save_gain(diff)
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
-		self.balance += diff
-		balance_eur = self.balance * self.get_price(exchange, 'ETH', 'EUR')
-		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR)".format(asset, str(exchange), diff, diff_eur, self.balance, balance_eur), mode="notification")
+		balance_eur = self.get_last_balance() * self.get_price(exchange, 'ETH', 'EUR')
+		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR)".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur), mode="notification")
 		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
+		self.save_gain(diff)
 
 	"""
 		Get the safest and lowest price to limit buy the given asset.
@@ -493,3 +494,29 @@ class Crypto:
 		if (str(exchange) == "Bitfinex"):
 			return 2
 		return None
+
+	"""
+		Get last recorded balance, stored in balance.csv file.
+		returns:	the last recorded balance in balance.csv file. If the file does not exist we create it.
+	"""
+	def get_last_balance(self):
+		if (os.path.isfile('balance.csv')):
+			with open('balance.csv', 'r') as file:
+				lines = file.readlines()
+				balance = float(lines[-1][:-1].split(',')[1])
+				return balance
+		else:
+			with open('balance.csv', 'w+') as file:
+				file.write('date time,balance in ETH\n')
+				file.write('{},0\n'.format(datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
+			return 0
+
+	"""
+		Add a new balance after a trade.
+		gain:	the difference to add to last balance.
+	"""
+	def save_gain(self, gain):
+		last = self.get_last_balance()
+		new = last + gain
+		with open("balance.csv", 'a') as file:
+			file.write("{},{}\n".format(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), new))
