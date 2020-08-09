@@ -404,7 +404,8 @@ class Crypto:
 		diff = balance_after - balance_before
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
 		self.balance += diff
-		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.6f} EUR), balance: {:7.6f}ETH".format(asset, str(exchange), diff, diff_eur, self.balance), mode="notification")
+		balance_eur = self.balance * self.get_price(exchange, 'ETH', 'EUR')
+		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR)".format(asset, str(exchange), diff, diff_eur, self.balance, balance_eur), mode="notification")
 		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
 
 	"""
@@ -419,13 +420,14 @@ class Crypto:
 		alt_BTC = self.get_buy_limit_price(exchange, asset, 'BTC')
 		alt_ETH = self.get_sell_limit_price(exchange, asset, 'ETH')
 		self.sell(exchange, "ETH", "BTC", amount_percentage=0.8)
-		self.buy(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC)
-		self.sell(exchange, asset, "ETH", amount_percentage=1, limit=alt_ETH)
+		self.buy(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC, timeout=1)
+		self.sell(exchange, asset, "ETH", amount_percentage=1, limit=alt_ETH, timeout=1)
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
 		self.balance += diff
-		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.6f} EUR), balance: {:7.6f}ETH".format(asset, str(exchange), diff, diff_eur, self.balance), mode="notification")
+		balance_eur = self.balance * self.get_price(exchange, 'ETH', 'EUR')
+		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR)".format(asset, str(exchange), diff, diff_eur, self.balance, balance_eur), mode="notification")
 		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
 
 	"""
