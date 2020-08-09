@@ -36,11 +36,13 @@ Backward: ETH -> BTC -> ALT -> ETH
 
 - ccxt
 - python-telegram-bot
+- matplotlib if you want to use graph_balance.py
 
 ## 💱 Current exchanges
 
 - Binance
 - Bittrex
+- Bitfinex
 
 ## 🤖 How to use
 
@@ -57,6 +59,8 @@ BINANCE_KEY="XXX"
 BINANCE_SECRET="XXX"
 BITTREX_KEY="XXX"
 BITTREX_SECRET="XXX"
+BITFINEX_KEY="XXX"
+BITFINEX_SECRET="XXX"
 TELEGRAM="XXX:XXX"
 TELEGRAM_CHAT="XXX"
 ```
@@ -72,8 +76,11 @@ import currencies
 # Create instance, connects to your exchange accounts
 crypto = Crypto()
 
-# Logs in Telegram and logs.txt
+# Logs in logs.txt
 crypto.log("Hello world")
+
+# Logs in logs.txt and as a Telegram notification
+crypto.log("Hello world", mode="notification")
 
 # Get your ETH balance on Binance
 crypto.get_balance(crypto.binance, "ETH")
@@ -113,13 +120,39 @@ crypto.get_order_book(crypto.bitfinex, 'ETH', 'BTC', mode='asks')
 # Get compatible alt coins
 print(currencies.binance_alternatives)
 print(currencies.bittrex_alternatives)
+
+# Get fees for given exchange and market sens. It returns the amount of value remaining after the trade
+# If the fee is 1%, it will returns 0.99
+print(crypto.get_fees(crypto.bitfinex, 'buy'))
+
+# The crypto class can track balance for multiple exchanges in a local CSV file
+
+# Get the last recorded balance
+print(crypto.get_last_balance())
+
+# Record a new loss of 0.2 ETH
+print(crypto.save_gain(-0.2))
 ```
 
-API calls to get_price and get_order_book are cached, if you want to fetch refreshed data:
+API calls to get_price and get_order_book are cached, if you want to clear cache and fetch updated data:
 ```python
 # Clear cache
 crypto.flush_cache()
 ```
+
+get_price method is great to fetch approximated price, if you want to be more precise over your orders I would suggest you to get  the order book and then create a limit order to buy your asset at a precise price. Market orders are fast and simple but can be executed at unexpected price. I stromgly advise you to use limit orders if you want to be successful with arbitrage.
+
+```sh
+# Wait for opportunities and execute arbitrage if found
+python3 run.py binance
+
+# Generate a graph of the evolution of the balance
+python3 graph_balance.py
+```
+
+
+
+
 
 ## ❤️ Want to participate ?
 
@@ -127,4 +160,5 @@ If you need help setting up the bot on your side, or if you have any suggestions
 
 You can also make pull requests.
 
-If you want to thank me: BTC: 3Dh7gEbDKbR6n3VAB1eK16eQgRGBJGU6vD
+If you want to thank me: BTC: **3Dh7gEbDKbR6n3VAB1eK16eQgRGBJGU6vD**
+
