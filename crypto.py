@@ -420,8 +420,14 @@ class Crypto:
 		alt_BTC = self.get_buy_limit_price(exchange, asset, 'BTC')
 		alt_ETH = self.get_sell_limit_price(exchange, asset, 'ETH')
 		self.sell(exchange, "ETH", "BTC", amount_percentage=0.8)
-		self.buy(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC, timeout=1)
-		self.sell(exchange, asset, "ETH", amount_percentage=1, limit=alt_ETH, timeout=1)
+		result1 = self.buy(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC, timeout=1)
+		if (not result1):
+			print("Failed to convert BTC to {}, BTC should be remaining on your wallet.".format(asset))
+			return
+		result2 = self.sell(exchange, asset, "ETH", amount_percentage=1, limit=alt_ETH, timeout=1)
+		if (not result2):
+			print("Failed to convert {} to ETH, {} should be remaining on your wallet.".format(asset, asset))
+			return
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before
 		self.save_gain(diff)
@@ -429,7 +435,6 @@ class Crypto:
 		balance_eur = self.get_last_balance() * self.get_price(exchange, 'ETH', 'EUR')
 		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR)".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur), mode="notification")
 		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
-		self.save_gain(diff)
 
 	"""
 		Get the safest and lowest price to limit buy the given asset.

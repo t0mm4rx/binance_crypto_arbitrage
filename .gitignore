@@ -8,3 +8,5 @@ test.py
 balance.csv
 balance.png
 interests.py
+*.swp
+*.swo
