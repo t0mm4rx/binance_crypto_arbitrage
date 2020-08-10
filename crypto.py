@@ -393,11 +393,11 @@ class Crypto:
 		alt_BTC = self.get_sell_limit_price(exchange, asset, 'BTC')
 		result1 = self.buy(exchange, asset, "ETH", amount_percentage=0.8, limit=alt_ETH, timeout=1)
 		if (not result1):
-			self.log("Failed to convert ETH to {} @{}.".format(asset, alt_ETH))
+			self.log("Failed to convert ETH to {} @{}.".format(asset, alt_ETH), mode="notification")
 			return
 		result2 = self.sell(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC, timeout=1)
 		if (not result2):
-			self.log("Failed to convert {} to BTC @{}. {} should be remaining on wallet.".format(asset, alt_BTC, asset))
+			self.log("Failed to convert {} to BTC @{}. {} should be remaining on wallet.".format(asset, alt_BTC, asset), mode="notification")
 			return
 		self.buy(exchange, "ETH", "BTC", amount_percentage=1)
 		balance_after = self.get_balance(exchange, "ETH")
@@ -422,11 +422,11 @@ class Crypto:
 		self.sell(exchange, "ETH", "BTC", amount_percentage=0.8)
 		result1 = self.buy(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC, timeout=1)
 		if (not result1):
-			print("Failed to convert BTC to {}, BTC should be remaining on your wallet.".format(asset))
+			self.log("Failed to convert BTC to {} @{}, BTC should be remaining on your wallet.".format(asset, alt_BTC), mode="notification")
 			return
 		result2 = self.sell(exchange, asset, "ETH", amount_percentage=1, limit=alt_ETH, timeout=1)
 		if (not result2):
-			print("Failed to convert {} to ETH, {} should be remaining on your wallet.".format(asset, asset))
+			self.log("Failed to convert {} to ETH @{}, {} should be remaining on your wallet.".format(asset, alt_ETH, asset), mode="notification")
 			return
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before

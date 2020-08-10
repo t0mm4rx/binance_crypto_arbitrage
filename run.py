@@ -12,19 +12,19 @@ import currencies
 import threading
 import sys
 import time
+import config
 
 """
 	Check if an asset makes profit, if yes we execute the arbitrage
 """
 def process_asset(crypto, exchange, alt):
-	threshold = -0.3
 	delta_forward = crypto.estimate_arbitrage_forward(exchange, alt)
 	delta_backward = crypto.estimate_arbitrage_backward(exchange, alt)
 	crypto.log("{:10} / {:5}: {:8.4f}% / {:8.4f}%".format(str(exchange), alt, delta_forward, delta_backward))
-	if (delta_forward > threshold):
+	if (delta_forward > config.THRESHOLD):
 		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_forward, str(exchange)), mode="notification")
 		crypto.run_arbitrage_forward(exchange, alt)
-	elif (delta_backward > threshold):
+	elif (delta_backward > config.THRESHOLD):
 		crypto.log("Found opportunity for {:5} @{:.4f} on {}".format(alt, delta_backward, str(exchange)), mode="notification")
 		crypto.run_arbitrage_backward(exchange, alt)
 
