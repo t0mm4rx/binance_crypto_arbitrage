@@ -10,3 +10,5 @@ balance.png
 interests.py
 *.swp
 *.swo
+kill.sh
+run.sh
