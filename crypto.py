@@ -404,8 +404,9 @@ class Crypto:
 		diff = balance_after - balance_before
 		self.save_gain(diff)
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
+		diff_percentage = diff / balance_before * 100
 		balance_eur = self.get_last_balance() * self.get_price(exchange, 'ETH', 'EUR')
-		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR)".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur), mode="notification")
+		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR), {:.2f}%".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur, diff_percentage), mode="notification")
 		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
 
 	"""
@@ -432,8 +433,9 @@ class Crypto:
 		diff = balance_after - balance_before
 		self.save_gain(diff)
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
+		diff_percentage = diff / balance_before * 100
 		balance_eur = self.get_last_balance() * self.get_price(exchange, 'ETH', 'EUR')
-		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR)".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur), mode="notification")
+		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR), {:.2f}%".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur, diff_percentage), mode="notification")
 		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
 
 	"""
