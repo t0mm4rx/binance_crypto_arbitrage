@@ -4,6 +4,7 @@ from datetime import datetime
 import telegram
 import os
 import time
+import config
 
 """
 	This class is a manager for multiple crypto exchanges.
@@ -397,7 +398,8 @@ class Crypto:
 			return
 		result2 = self.sell(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC, timeout=1)
 		if (not result2):
-			self.log("Failed to convert {} to BTC @{}. {} should be remaining on wallet.".format(asset, alt_BTC, asset), mode="notification")
+			self.log("Failed to convert {} to BTC @{}. Converting back {} to ETH.".format(asset, alt_BTC, asset), mode="notification")
+			crypto.sell(exchange, asset, "ETH", amount_percentage=1)
 			return
 		self.buy(exchange, "ETH", "BTC", amount_percentage=1)
 		balance_after = self.get_balance(exchange, "ETH")
@@ -423,11 +425,13 @@ class Crypto:
 		self.sell(exchange, "ETH", "BTC", amount_percentage=0.8)
 		result1 = self.buy(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC, timeout=1)
 		if (not result1):
-			self.log("Failed to convert BTC to {} @{}, BTC should be remaining on your wallet.".format(asset, alt_BTC), mode="notification")
+			self.log("Failed to convert BTC to {} @{}. Converting back BTC to ETH.".format(asset, alt_BTC), mode="notification")
+			crypto.sell(exchange, "BTC", "ETH", amount_percentage=1)
 			return
 		result2 = self.sell(exchange, asset, "ETH", amount_percentage=1, limit=alt_ETH, timeout=1)
 		if (not result2):
-			self.log("Failed to convert {} to ETH @{}, {} should be remaining on your wallet.".format(asset, alt_ETH, asset), mode="notification")
+			self.log("Failed to convert {} to ETH @{}. Converting back {} to ETH.".format(asset, alt_ETH, asset), mode="notification")
+			crypto.sell(exchange, asset, "ETH", amount_percentage=1)
 			return
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before
@@ -452,9 +456,9 @@ class Crypto:
 		if (not bids):
 			return None
 		bids.sort()
-		if (len(bids) < 3):
+		if (len(bids) < config.ORDER_BOOK_START_OFFER):
 			return None
-		for bid in bids[3:]:
+		for bid in bids[config.ORDER_BOOK_START_OFFER:]:
 			if (bid[1] >= amount):
 				return bid[0]
 
@@ -472,9 +476,9 @@ class Crypto:
 		if (not asks):
 			return None
 		asks.sort(reverse=True)
-		if (len(asks) < 3):
+		if (len(asks) < config.ORDER_BOOK_START_OFFER):
 			return None
-		for ask in asks[3:]:
+		for ask in asks[config.ORDER_BOOK_START_OFFER:]:
 			if (ask[1] >= amount):
 				return ask[0]
 
