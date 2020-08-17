@@ -44,6 +44,28 @@ Backward: ETH -> BTC -> ALT -> ETH
 - Bittrex
 - Bitfinex
 
+## 🚀 What's the algorithm?
+
+The first step is to check if the trade would be profitable or not, using the estimate_arbitrage_forward/backward functions.
+We estimate that it's proftiable if this functions returns a probability greater than our THRESHOLD.
+
+Once we have found our opportunity, we will try to get the wanted asset at the best price possible:
+- We try buying/selling at the best price in orderbook by creating a limit order.
+- While the order is not completed after WAIT_LIMIT_ORDER, we decrease the price in the orderbook.
+- Once we have completed the order, we pass to the next step.
+
+So, for example, we want to buy ADA/ETH. Here is the bid orderbook:
+
+| Order index |   Price    |
+| :---------: | :--------: |
+|      1      | 0.00032668 |
+|      2      | 0.00032669 |
+|      3      | 0.00032675 |
+
+Here we try to buy 1 @0.00032668, we wait WAIT_LIMIT_ORDER seconds to see if the order has been fulfilled, if not we try to buy 2 @0.00032669, and so on until we buy the asset.
+
+Once we completed the first step of our arbitrage, we go onto the next one until the arbitrage has been completed.
+
 ## 🤖 How to use
 
 First, install all dependencies.
@@ -161,4 +183,3 @@ If you need help setting up the bot on your side, or if you have any suggestions
 You can also make pull requests.
 
 If you want to thank me: BTC: **3Dh7gEbDKbR6n3VAB1eK16eQgRGBJGU6vD**
-

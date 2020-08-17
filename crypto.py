@@ -5,6 +5,7 @@ import telegram
 import os
 import time
 import config
+from operator import itemgetter
 
 """
 	This class is a manager for multiple crypto exchanges.
@@ -388,18 +389,15 @@ class Crypto:
 		asset:		the asset to forward triarb.
 	"""
 	def run_arbitrage_forward(self, exchange, asset):
-		self.log("Arbitrage on {}: ETH -> {} -> BTC -> ETH".format(exchange, asset))
+		self.log("🔥 Arbitrage on {}: ETH -> {} -> BTC -> ETH".format(exchange, asset))
 		balance_before = self.get_balance(exchange, "ETH")
-		alt_ETH = self.get_buy_limit_price(exchange, asset, 'ETH')
-		alt_BTC = self.get_sell_limit_price(exchange, asset, 'BTC')
-		result1 = self.buy(exchange, asset, "ETH", amount_percentage=0.8, limit=alt_ETH, timeout=1)
+		result1 = self.best_buy(exchange, asset, 'ETH', config.ETH_PERCENTAGE)
 		if (not result1):
-			self.log("Failed to convert ETH to {} @{}.".format(asset, alt_ETH), mode="notification")
+			self.log("❌ Failed to convert {} to ETH, canceling arbitrage.".format(asset), mode="notification")
 			return
-		result2 = self.sell(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC, timeout=1)
+		result2 = self.best_sell(exchange, asset, 'BTC', 1)
 		if (not result2):
-			self.log("Failed to convert {} to BTC @{}. Converting back {} to ETH.".format(asset, alt_BTC, asset), mode="notification")
-			crypto.sell(exchange, asset, "ETH", amount_percentage=1)
+			self.log("❌ Failed to convert {} to BTC, canceling arbitrage.".format(asset), mode="notification")
 			return
 		self.buy(exchange, "ETH", "BTC", amount_percentage=1)
 		balance_after = self.get_balance(exchange, "ETH")
@@ -408,7 +406,7 @@ class Crypto:
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
 		diff_percentage = diff / balance_before * 100
 		balance_eur = self.get_last_balance() * self.get_price(exchange, 'ETH', 'EUR')
-		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR), {:.2f}%".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur, diff_percentage), mode="notification")
+		self.log("➡️ Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR), {:.2f}%".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur, diff_percentage), mode="notification")
 		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
 
 	"""
@@ -418,20 +416,18 @@ class Crypto:
 		asset:		the asset to backward triarb.
 	"""
 	def run_arbitrage_backward(self, exchange, asset):
-		self.log("Arbitrage on {}: ETH -> BTC -> {} -> ETH".format(exchange, asset))
+		self.log("🔥 Arbitrage on {}: ETH -> BTC -> {} -> ETH".format(exchange, asset))
 		balance_before = self.get_balance(exchange, "ETH")
 		alt_BTC = self.get_buy_limit_price(exchange, asset, 'BTC')
 		alt_ETH = self.get_sell_limit_price(exchange, asset, 'ETH')
-		self.sell(exchange, "ETH", "BTC", amount_percentage=0.8)
-		result1 = self.buy(exchange, asset, "BTC", amount_percentage=1, limit=alt_BTC, timeout=1)
+		self.sell(exchange, "ETH", "BTC", amount_percentage=config.ETH_PERCENTAGE)
+		result1 = self.best_buy(exchange, asset, 'BTC', 1)
 		if (not result1):
-			self.log("Failed to convert BTC to {} @{}. Converting back BTC to ETH.".format(asset, alt_BTC), mode="notification")
-			crypto.sell(exchange, "BTC", "ETH", amount_percentage=1)
+			self.log("❌ Failed to convert BTC to {}, canceling arbitrage.".format(asset), mode="notification")
 			return
-		result2 = self.sell(exchange, asset, "ETH", amount_percentage=1, limit=alt_ETH, timeout=1)
+		result2 = self.best_sell(exchange, asset, 'ETH', 1)
 		if (not result2):
-			self.log("Failed to convert {} to ETH @{}. Converting back {} to ETH.".format(asset, alt_ETH, asset), mode="notification")
-			crypto.sell(exchange, asset, "ETH", amount_percentage=1)
+			self.log("❌ Failed to convert {} to ETH, canceling arbitrage.".format(asset), mode="notification")
 			return
 		balance_after = self.get_balance(exchange, "ETH")
 		diff = balance_after - balance_before
@@ -439,7 +435,7 @@ class Crypto:
 		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
 		diff_percentage = diff / balance_before * 100
 		balance_eur = self.get_last_balance() * self.get_price(exchange, 'ETH', 'EUR')
-		self.log("Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR), {:.2f}%".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur, diff_percentage), mode="notification")
+		self.log("➡️ Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR), {:.2f}%".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur, diff_percentage), mode="notification")
 		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
 
 	"""
@@ -456,9 +452,9 @@ class Crypto:
 		if (not bids):
 			return None
 		bids.sort()
-		if (len(bids) < config.ORDER_BOOK_START_OFFER):
+		if (len(bids) < config.ORDERBOOK_INDEX_ESTIMATION):
 			return None
-		for bid in bids[config.ORDER_BOOK_START_OFFER:]:
+		for bid in bids[config.ORDERBOOK_INDEX_ESTIMATION:]:
 			if (bid[1] >= amount):
 				return bid[0]
 
@@ -476,9 +472,9 @@ class Crypto:
 		if (not asks):
 			return None
 		asks.sort(reverse=True)
-		if (len(asks) < config.ORDER_BOOK_START_OFFER):
+		if (len(asks) < config.ORDERBOOK_INDEX_ESTIMATION):
 			return None
-		for ask in asks[config.ORDER_BOOK_START_OFFER:]:
+		for ask in asks[config.ORDERBOOK_INDEX_ESTIMATION:]:
 			if (ask[1] >= amount):
 				return ask[0]
 
@@ -531,3 +527,37 @@ class Crypto:
 		new = last + gain
 		with open("balance.csv", 'a') as file:
 			file.write("{},{}\n".format(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), new))
+
+	"""
+		Buy at best price possible using decreasing buy limit orders.
+	"""
+	def best_buy(self, exchange, asset1, asset2, amount_percentage):
+		orderbook = self.get_order_book(exchange, asset1, asset2, mode="asks")
+		orderbook.sort(key=itemgetter(0))
+		for price in orderbook[:config.MAX_ORDERBOOK_TRIES]:
+			self.log("Trying to buy {} with {} @{:.8f}.".format(asset1, asset2, price[0]))
+			result = self.buy(exchange, asset1, asset2, amount_percentage=amount_percentage, limit=price[0], timeout=config.WAIT_LIMIT_ORDER)
+			if (result):
+				self.log("✅ Bought {} with {} @{:.8f}.".format(asset1, asset2, price[0]))
+				return True
+			else:
+				self.log("❌ Failed to buy {} with {} at {:.8f}.".format(asset1, asset2, price[0]))
+		self.log("❌ Was not able to buy {} with {}".format(asset1, asset2))
+		return False
+
+	"""
+		Sell at best price possible using decreasing buy sell orders.
+	"""
+	def best_sell(self, exchange, asset1, asset2, amount_percentage):
+		orderbook = self.get_order_book(exchange, asset1, asset2, mode="bids")
+		orderbook.sort(key=itemgetter(0), reverse=True)
+		for price in orderbook[:config.MAX_ORDERBOOK_TRIES]:
+			self.log("Trying to sell {} to {} @{:.8f}.".format(asset1, asset2, price[0]))
+			result = self.sell(exchange, asset1, asset2, amount_percentage=amount_percentage, limit=price[0], timeout=config.WAIT_LIMIT_ORDER)
+			if (result):
+				self.log("✅ Sold {} to {} @{:.8f}.".format(asset1, asset2, price[0]))
+				return True
+			else:
+				self.log("❌ Failed to sell {} to {} at {:.8f}.".format(asset1, asset2, price[0]))
+		self.log("❌ Was not able to sell {} to {}".format(asset1, asset2))
+		return False
