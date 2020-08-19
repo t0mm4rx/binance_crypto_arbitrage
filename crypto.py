@@ -383,6 +383,22 @@ class Crypto:
 			return False
 
 	"""
+		Summarize arbitrage, calculate loss/gain, print it, and save it on the disk.
+		exchange:		the exchange with whom we did the arbitrage.
+		balance_before:	the balance before the arbitrage.
+		asset:			the asset that have been arbitrate
+	"""
+	def summarize_arbitrage(self, exchange, balance_before, asset):
+		balance_after = self.get_balance(exchange, "ETH")
+		diff = balance_after - balance_before
+		self.save_gain(diff)
+		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
+		diff_percentage = diff / balance_before * 100
+		balance_eur = self.get_last_balance() * self.get_price(exchange, 'ETH', 'EUR')
+		self.log("➡️ Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR), {:.2f}%".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur, diff_percentage), mode="notification")
+		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
+
+	"""
 		Executes forward arbitrage on given asset:
 		ETH -> ALT -> BTC -> ETH.
 		exchange:	the wanted exchange.
@@ -397,17 +413,12 @@ class Crypto:
 			return
 		result2 = self.best_sell(exchange, asset, 'BTC', 1)
 		if (not result2):
-			self.log("❌ Failed to convert {} to BTC, canceling arbitrage.".format(asset), mode="notification")
+			self.log("❌ Failed to convert {} to BTC, canceling arbitrage. Will convert back {} to ETH.".format(asset, asset), mode="notification")
+			self.sell(exchange, asset, 'ETH', amount_percentage=1)
+			self.summarize_arbitrage(exchange, balance_before, asset)
 			return
 		self.buy(exchange, "ETH", "BTC", amount_percentage=1)
-		balance_after = self.get_balance(exchange, "ETH")
-		diff = balance_after - balance_before
-		self.save_gain(diff)
-		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
-		diff_percentage = diff / balance_before * 100
-		balance_eur = self.get_last_balance() * self.get_price(exchange, 'ETH', 'EUR')
-		self.log("➡️ Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR), {:.2f}%".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur, diff_percentage), mode="notification")
-		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
+		self.summarize_arbitrage(exchange, balance_before, asset)
 
 	"""
 		Executes backward arbitrage on given asset:
@@ -423,20 +434,17 @@ class Crypto:
 		self.sell(exchange, "ETH", "BTC", amount_percentage=config.ETH_PERCENTAGE)
 		result1 = self.best_buy(exchange, asset, 'BTC', 1)
 		if (not result1):
-			self.log("❌ Failed to convert BTC to {}, canceling arbitrage.".format(asset), mode="notification")
+			self.log("❌ Failed to convert BTC to {}, canceling arbitrage. Will convert BTC to ETH.".format(asset), mode="notification")
+			self.buy(exchange, 'ETH', 'BTC', amount_percentage=1)
+			self.summarize_arbitrage(exchange, balance_before, asset)
 			return
 		result2 = self.best_sell(exchange, asset, 'ETH', 1)
 		if (not result2):
-			self.log("❌ Failed to convert {} to ETH, canceling arbitrage.".format(asset), mode="notification")
+			self.log("❌ Failed to convert {} to ETH, canceling arbitrage. Forcing convertion from {} to ETH.".format(asset, asset), mode="notification")
+			self.sell(exchange, asset, 'ETH', amount_percentage=1)
+			self.summarize_arbitrage(exchange, balance_before, asset)
 			return
-		balance_after = self.get_balance(exchange, "ETH")
-		diff = balance_after - balance_before
-		self.save_gain(diff)
-		diff_eur = diff * self.get_price(exchange, 'ETH', 'EUR')
-		diff_percentage = diff / balance_before * 100
-		balance_eur = self.get_last_balance() * self.get_price(exchange, 'ETH', 'EUR')
-		self.log("➡️ Arbitrage {:5} on {:10}, diff: {:8.6f}ETH ({:.2f} EUR), balance: {:7.6f}ETH ({:.2f} EUR), {:.2f}%".format(asset, str(exchange), diff, diff_eur, self.get_last_balance(), balance_eur, diff_percentage), mode="notification")
-		self.log("Balance: {} --> {} ETH".format(balance_before, balance_after))
+		self.summarize_arbitrage(exchange, balance_before, asset)
 
 	"""
 		Get the safest and lowest price to limit buy the given asset.
@@ -541,7 +549,7 @@ class Crypto:
 				self.log("✅ Bought {} with {} @{:.8f}.".format(asset1, asset2, price[0]))
 				return True
 			else:
-				self.log("❌ Failed to buy {} with {} at {:.8f}.".format(asset1, asset2, price[0]))
+				self.log("⏳ Failed to buy {} with {} at {:.8f}.".format(asset1, asset2, price[0]))
 		self.log("❌ Was not able to buy {} with {}".format(asset1, asset2))
 		return False
 
@@ -558,6 +566,6 @@ class Crypto:
 				self.log("✅ Sold {} to {} @{:.8f}.".format(asset1, asset2, price[0]))
 				return True
 			else:
-				self.log("❌ Failed to sell {} to {} at {:.8f}.".format(asset1, asset2, price[0]))
+				self.log("⏳ Failed to sell {} to {} at {:.8f}.".format(asset1, asset2, price[0]))
 		self.log("❌ Was not able to sell {} to {}".format(asset1, asset2))
 		return False

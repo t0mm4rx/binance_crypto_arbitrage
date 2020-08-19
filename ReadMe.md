@@ -136,6 +136,13 @@ crypto.buy(crypto.binance, "ETH", "BTC", amount=0.3, limit=0.053)
 # Will sell ETH with BTC at 0.054 or better, if the order is not fullfilled after 3 seconds, we close the order
 crypto.sell(crypto.binance, "ETH", "BTC", amount=0.3, limit=0.054, timeout=3)
 
+# Buy with the best possible price
+
+# Will try better prices in order books to buy ETH with 50% of BTC available
+crypto.best_buy(crypto.bittrex, 'ETH', 'BTC', 0.5)
+# Will try better prices in order books to sell 50% of ETH
+crypto.best_sell(crypto.bittrex, 'ETH', 'BTC', 0.5)
+
 # Get order book
 crypto.get_order_book(crypto.bitfinex, 'ETH', 'BTC', mode='asks')
 
@@ -171,10 +178,6 @@ python3 run.py binance
 # Generate a graph of the evolution of the balance
 python3 graph_balance.py
 ```
-
-
-
-
 
 ## ❤️ Want to participate ?
 

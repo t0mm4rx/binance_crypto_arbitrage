@@ -7,4 +7,4 @@ MAX_ORDERBOOK_TRIES=8
 # How many seconds should we wait between best buy/ best sell attempts
 WAIT_LIMIT_ORDER=1
 # What proportion of our ETH balance we use to arbitrate
-ETH_PERCENTAGE=0.5
+ETH_PERCENTAGE=0.2
