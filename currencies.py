@@ -185,7 +185,6 @@ bitfinex_alternatives = [
 	'OMG',
 	'NEO',
 	'ETP',
-	'EDO',
 	'DATA',
 	'GNT',
 	'SNT',
