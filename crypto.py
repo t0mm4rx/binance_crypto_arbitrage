@@ -23,6 +23,9 @@ class Crypto:
 	bot = None
 	cache_prices = []
 	cache_order_books = []
+	ORDER_NOT_FILLED = 0
+	ORDER_IN_PROGRESS = 1
+	ORDER_FILLED = 2
 
 	def __init__(self):
 		self.init_ccxt()
@@ -209,10 +212,15 @@ class Crypto:
 	def is_open_order(self, exchange, asset1, asset2):
 		try:
 			data = exchange.fetchOpenOrders('{}/{}'.format(asset1, asset2))
-			return len(data) > 0
+			for item in data:
+				if (item['filled'] > 0):
+					return Crypto.ORDER_IN_PROGRESS
+			if (len(data) > 0):
+				return Crypto.ORDER_NOT_FILLED
+			return Crypto.ORDER_FILLED
 		except Exception as e:
 			self.log("Error while fetching open orders for {}/{}: {}".format(asset1, asset2, str(e)))
-			return False
+			return None
 
 	"""
 		Cancel all orders for given assets.
@@ -222,14 +230,16 @@ class Crypto:
 		returns:	True if success, False if something is wrong.
 	"""
 	def cancel_orders(self, exchange, asset1, asset2):
-		try:
-			orders = exchange.fetchOpenOrders('{}/{}'.format(asset1, asset2))
-			for order in orders:
-				exchange.cancelOrder(order['id'], '{}/{}'.format(asset1, asset2))
-			return True
-		except Exception as e:
-			self.log("Error while canceling orders for {}/{}: {}".format(asset1, asset2, str(e)))
-			return False
+		for _ in range(5):
+			try:
+				orders = exchange.fetchOpenOrders('{}/{}'.format(asset1, asset2))
+				for order in orders:
+					exchange.cancelOrder(order['id'], '{}/{}'.format(asset1, asset2))
+				return True
+			except Exception as e:
+				self.log("Error while canceling orders for {}/{}: {}. Retrying.".format(asset1, asset2, str(e)))
+		self.log("Cannot cancel orders for {}/{}.".format(asset1, asset2, str(e)))
+		return False
 
 	"""
 		Estimate the profit for forward arbitrage on given asset.
@@ -314,10 +324,24 @@ class Crypto:
 				)
 				if (timeout):
 					time.sleep(timeout)
-					if (self.is_open_order(exchange, asset1, asset2)):
-						self.cancel_orders(exchange, asset1, asset2)
-						self.log("Canceled limit order for {}/{} after timeout.".format(asset1, asset2))
+					result = self.is_open_order(exchange, asset1, asset2)
+					if (result == Crypto.ORDER_NOT_FILLED):
+						if (self.cancel_orders(exchange, asset1, asset2)):
+							self.log("Canceled limit order for {}/{} after timeout.".format(asset1, asset2))
 						return False
+					elif (result == Crypto.ORDER_IN_PROGRESS):
+						n = 0
+						while (result == Crypto.ORDER_IN_PROGRESS):
+							n += 1
+							if (n >= config.WAIT_TIMES_WHEN_FILLED):
+								self.log("Order cannot be terminated, selling {} to {}.".format(asset1, asset2))
+								self.sell(exchange, asset1, asset2, amount_percentage=1)
+								return False
+							self.log("Order for {}/{} is in progress, waiting...".format(asset1, asset2))
+							time.sleep(timeout)
+							result = self.is_open_order(exchange, asset1, asset2)
+						self.log("Limit order executed.")
+						return True
 					else:
 						self.log("Limit order executed.")
 						return True
@@ -369,10 +393,24 @@ class Crypto:
 				)
 				if (timeout):
 					time.sleep(timeout)
-					if (self.is_open_order(exchange, asset1, asset2)):
-						self.cancel_orders(exchange, asset1, asset2)
-						self.log("Canceled limit order for {}/{} after timeout.".format(asset1, asset2))
+					result = self.is_open_order(exchange, asset1, asset2)
+					if (result == Crypto.ORDER_NOT_FILLED):
+						if (self.cancel_orders(exchange, asset1, asset2)):
+							self.log("Canceled limit order for {}/{} after timeout.".format(asset1, asset2))
 						return False
+					elif (result == Crypto.ORDER_IN_PROGRESS):
+						n = 0
+						while (result == Crypto.ORDER_IN_PROGRESS):
+							n += 1
+							if (n >= config.WAIT_TIMES_WHEN_FILLED):
+								self.log("Order cannot be terminated, buying {} with {}.".format(asset1, asset2))
+								self.buy(exchange, asset1, asset2, amount_percentage=1)
+								return False
+							self.log("Order for {}/{} is in progress, waiting...".format(asset1, asset2))
+							time.sleep(timeout)
+							result = self.is_open_order(exchange, asset1, asset2)
+						self.log("Limit order executed.")
+						return True
 					else:
 						self.log("Limit order executed.")
 						return True

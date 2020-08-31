@@ -24,5 +24,5 @@ for line in lines:
 				pass
 
 plt.hist(values, range=[-1, 0], bins=40)
-# plt.show()
+plt.show()
 plt.savefig('distrib.png')
